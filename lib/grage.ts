@@ -1,8 +1,10 @@
-import {ConnectMessage, Message, ReceiveMessage, SendMessage} from "../src/lib";
+import {ConnectMessage, Message, Ping, ReceiveMessage, RequestPing, SendMessage} from "../src/lib";
 
 function isReceiveMessage(m: Message): m is ReceiveMessage {
     return m.type === 'receive';
 }
+
+type ChannelListener = (data: any) => void;
 
 // @ts-ignore
 window.grage = (function () {
@@ -13,14 +15,34 @@ window.grage = (function () {
 
     //list of listeners to each channel
     const channelListeners: {
-        [id: string]: ((data: any) => void)[]
+        [id: string]: ChannelListener[]
     } = {};
+    const onceListeners: {
+        [id: string]: ChannelListener[]
+    } = {};
+
+    /**
+     * Sends a message on the websocket, returns any error which occurs
+     * @param m the message to send
+     */
+    function wsSend(m: Message) {
+        try {
+            if (grage.options.debug)
+                console.log('[Send]', m);
+            ws.send(JSON.stringify(m));
+            return false;
+        } catch (error) {
+             handleError(error);
+             return error;
+        }
+    }
 
     const grage = {
         options: {
-            debug: true,
-            reloadTime: 5 * 1000,//time before the page reloads upon error
+            debug: false,
+            reloadTime: 5 * 1000,//delay before the page reloads upon error
             refreshTime: 60 * 1000,
+            pingTimeout: 5 * 1000,
         },
         /**
          * Registers a listener which is called upon connection to server
@@ -45,7 +67,7 @@ window.grage = (function () {
         /**
          * Gets the locally stored data/settings for this app
          */
-        getData(defaultValue?:any) {
+        getData(defaultValue?: any) {
             const app = grage.getAppID();
             const data = window.localStorage.getItem(app);
             if (data)
@@ -77,55 +99,51 @@ window.grage = (function () {
             );
         },
         /**
-         * Refreshes a connection to a channel
-         * @param id the id of the channel
+         * Request a device to ping
+         * @param id the device to request ping from
          */
-        refreshConnection(id: string) {
-            const m: ConnectMessage = {
-                type: "connect",
+        requestPing(id: string) {
+            //send ping
+            const m: RequestPing = {
+                type: "rping",
                 id,
+                data: undefined,
+                fromDevice:false
             };
-            try {
-                if (grage.options.debug)
-                    console.log('[Send]', m);
-                ws.send(JSON.stringify(m));
-            } catch (error) {
-                handleError(error);
-            }
+            if(wsSend(m))return;
         },
         /**
          * Connects to a channel and listens to any messages on channel
          * @param id the id of the channel
-         * @param handler the listener for messages
-         * @param refresh called when the channel is refreshed
+         * @param cb the listener for messages
+         * @param init called when confirmation received that channel is alive
          */
-        connect(id: string, handler: (data: any) => void, refresh?: () => void) {
-            function doRefresh() {
-                grage.refreshConnection(id);
-                if (refresh) refresh();
-            }
-
+        connect(id: string, cb: ChannelListener, init?: () => void) {
             //if not connected to channel yet
             if (!channelListeners.hasOwnProperty(id)) {
                 //initialize channelListeners
                 channelListeners[id] = [];
-                //set timer to periodically refresh connection
-                doRefresh();
-                setInterval(doRefresh, grage.options.refreshTime);
+
+                //send channel connect message
+                const m: ConnectMessage = {
+                    type: "connect",
+                    id,
+                };
+                if(wsSend(m))return;
             }
 
-            //add listener to channel
-            channelListeners[id].push(handler);
+            channelListeners[id].push(cb);
         },
         /**
-         * Removes a listener from a channel
-         * @param id the channel to remove from
-         * @param cb the listener to remove
+         * Listens to a single message from a channel
+         * @param id the channel to listen to
+         * @param cb the listener
          */
-        disconnect(id:string, cb:(x:any)=>void){
-            const idx=channelListeners[id].indexOf(cb);
-            if(idx!==-1)
-                channelListeners[id].splice(idx,1);
+        once(id: string, cb: ChannelListener) {
+            if (!onceListeners.hasOwnProperty(id)) {
+                onceListeners[id] = [];
+            }
+            onceListeners[id].push(cb);
         },
         /**
          * Sends data to channel
@@ -137,14 +155,9 @@ window.grage = (function () {
                 type: "send",
                 data,
                 id,
+                fromDevice:false,
             };
-            try {
-                if (grage.options.debug)
-                    console.log('[Send]', m);
-                ws.send(JSON.stringify(m));
-            } catch (error) {
-                handleError(error);
-            }
+            if(wsSend(m))return;
         }
     };
 
@@ -154,15 +167,24 @@ window.grage = (function () {
             if (grage.options.debug)
                 console.log('[recv]', m);
             if (isReceiveMessage(m)) {
-                //send to every listener in the proper channel
-                for (const listener of channelListeners[m.id]) {
-                    listener(m.data);
+                //ignore messages from other browsers
+                if(m.fromDevice) {
+                    //send to every listener in the proper channel
+                    for (const listener of channelListeners[m.id]) {
+                        listener(m.data);
+                    }
+                    //send to every once listener
+                    for (const listener of onceListeners[m.id]) {
+                        listener(m.data);
+                    }
+                    //then clear list of once listeners
+                    delete onceListeners[m.id];
                 }
             } else {
                 console.warn('[Unknown message type]', m);
             }
         } catch (error) {
-            handleError(error);
+            return handleError(error);
         }
     };
 

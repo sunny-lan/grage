@@ -49,7 +49,8 @@ async function run() {
     await s<SendMessage>(ws1, {
         type: 'send',
         id: 'hello',
-        data: 'lol'
+        data: 'lol',
+        fromDevice:false,
     });
     console.log('sent lol');
     console.log('[2]', await wm(ws2));

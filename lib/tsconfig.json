@@ -1,7 +1,8 @@
 {
   "compilerOptions": {
     "module": "es2015",
-    "target": "es5"
+    "target": "es5",
+    "lib": ["dom"]
   },
   "include": [
     "./*.ts"

@@ -37,6 +37,7 @@ export interface ChannelMessage extends Message {
     type: 'send' | 'receive' | 'rping';
     id: string;
     data: any;
+    fromDevice:boolean;
 }
 
 export interface SendMessage extends ChannelMessage {
@@ -57,9 +58,11 @@ export function isReceiveMessage(m: Message): m is ReceiveMessage {
 
 export interface RequestPing extends ChannelMessage{
     type:'rping',
-    data:undefined
+    data:undefined,
+    fromDevice:false,
 }
 
 export interface Ping extends Message{
     type:'ping',
+    fromDevice:true,
 }

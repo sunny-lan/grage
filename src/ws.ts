@@ -1,8 +1,8 @@
 import * as WebSocket from "ws";
 import {ErrorMessage, isConnectMessage, isSendMessage, Message, MetadataMessage, ReceiveMessage} from "./lib";
 
-function debug(...args:any) {
-    if(process.env.DEBUG==='true')
+function debug(...args: any) {
+    if (process.env.DEBUG === 'true')
         console.log(...args);
 }
 
@@ -20,10 +20,10 @@ export default function makeWss(options = {
         return channels[id];
     }
 
-    let currentID=1;
+    let currentID = 1;
 
     return function handleConnection(me: WebSocket) {
-        const clientID=currentID++;
+        const clientID = currentID++;
         console.log('[client connected]', clientID);
 
         const connectedChannels: string[] = [];
@@ -150,6 +150,7 @@ export default function makeWss(options = {
                         type: "receive",
                         data: m.data,
                         id: m.id,
+                        fromDevice: m.fromDevice,
                     };
                     //send to every client in certain channel
                     for (const client of getClients(m.id)) {

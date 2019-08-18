@@ -123,6 +123,7 @@ function makeWss(options = {
                         type: "receive",
                         data: m.data,
                         id: m.id,
+                        fromDevice: m.fromDevice,
                     };
                     //send to every client in certain channel
                     for (const client of getClients(m.id)) {

@@ -49,7 +49,7 @@ window.onload = function () {
             /**
              * Runs when the device initializes
              */
-            function refresh() {
+            function init() {
                 //enable input then read
                 grage.send(id, esp8266.pinMode(sensorPin, esp8266.PinMode.INPUT_PULLUP));
                 grage.send(id, esp8266.attachInterrupt(sensorPin, esp8266.InterruptMode.CHANGE));
