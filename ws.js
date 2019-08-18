@@ -21,7 +21,7 @@ function makeWss(options = {
         const clientID = currentID++;
         console.log('[client connected]', clientID);
         const connectedChannels = [];
-        const timers = {};
+        // const timers: { [id: string]: NodeJS.Timeout } = {};
         //regularly send ping with metadata
         const metadataTimer = setInterval(function sendMetadata() {
             const meta = Object.assign({ type: 'metadata', connectedChannels }, options);
@@ -41,12 +41,13 @@ function makeWss(options = {
                 connectedChannels.push(id);
             }
             //automatically disconnect if timeout occurs
-            if (timers.hasOwnProperty(id)) {
-                //clear any old timer
-                clearTimeout(timers[id]);
-            }
-            //store timeout in case we need to clear it later (see above)
-            timers[id] = setTimeout(() => disconnect(id), options.connectionTimeout);
+            // if (timers.hasOwnProperty(id)) {
+            //     //clear any old timer
+            //     clearTimeout(timers[id]);
+            // }
+            //
+            // //store timeout in case we need to clear it later (see above)
+            // timers[id] = setTimeout(() => disconnect(id), options.connectionTimeout+1000);
         }
         /**
          * Disconnects this client from a channel.
