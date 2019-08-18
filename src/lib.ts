@@ -1,5 +1,5 @@
 export interface Message {
-    type: 'error' | 'metadata' | 'connect' | 'send' | 'receive';
+    type: 'error' | 'metadata' | 'connect' | 'send' | 'receive' | 'rping' | 'ping';
 }
 
 
@@ -34,7 +34,7 @@ export function isConnectMessage(m: Message): m is ConnectMessage {
 }
 
 export interface ChannelMessage extends Message {
-    type: 'send' | 'receive';
+    type: 'send' | 'receive' | 'rping';
     id: string;
     data: any;
 }
@@ -53,4 +53,13 @@ export interface ReceiveMessage extends ChannelMessage {
 
 export function isReceiveMessage(m: Message): m is ReceiveMessage {
     return m.type === 'receive';
+}
+
+export interface RequestPing extends ChannelMessage{
+    type:'rping',
+    data:undefined
+}
+
+export interface Ping extends Message{
+    type:'ping',
 }

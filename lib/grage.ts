@@ -9,7 +9,7 @@ window.grage = (function () {
     const ws = new WebSocket('ws://grage.herokuapp.com/ws');
 
     //list of listeners for when the websocket connects
-    const openListeners: (() => void)[] = [];
+    let openListeners: (() => void)[] | undefined = [];
 
     //list of listeners to each channel
     const channelListeners: {
@@ -27,7 +27,10 @@ window.grage = (function () {
          * @param cb the listener
          */
         onOpen(cb: () => void) {
-            openListeners.push(cb);
+            if (openListeners === undefined)
+                cb();
+            else
+                openListeners.push(cb);
         },
         /**
          * Gets the ID of the currently running app
@@ -35,25 +38,27 @@ window.grage = (function () {
         getAppID() {
             const url = window.location.pathname.slice(1);
             const tokens = url.split('/');
-            if (tokens[0] !== 'app')
+            if (tokens[0] !== 'apps')
                 throw new Error('Cannot get data: invalid app');
             return tokens[1];
         },
         /**
          * Gets the locally stored data/settings for this app
          */
-        getData() {
+        getData(defaultValue?:any) {
             const app = grage.getAppID();
             const data = window.localStorage.getItem(app);
             if (data)
                 return JSON.parse(data);
+            else
+                return defaultValue;
         },
         /**
          * Saves some data to the local storage for this app.
          * Overwrites old data
          * @param data the data to save
          */
-        setData(data: any) {
+        saveData(data: any) {
             const app = grage.getAppID();
             window.localStorage.setItem(grage.getAppID(), JSON.stringify(data));
         },
@@ -113,6 +118,16 @@ window.grage = (function () {
             channelListeners[id].push(handler);
         },
         /**
+         * Removes a listener from a channel
+         * @param id the channel to remove from
+         * @param cb the listener to remove
+         */
+        disconnect(id:string, cb:(x:any)=>void){
+            const idx=channelListeners[id].indexOf(cb);
+            if(idx!==-1)
+                channelListeners[id].splice(idx,1);
+        },
+        /**
          * Sends data to channel
          * @param id the id of the channel
          * @param data the data to send
@@ -156,8 +171,10 @@ window.grage = (function () {
         if (grage.options.debug)
             console.log('[Websocket open]');
         //call every listener upon connect
-        for (const handler of openListeners)
-            handler();
+        if (openListeners !== undefined)
+            for (const handler of openListeners)
+                handler();
+        openListeners = undefined;
     };
 
     function handleError(error: Error) {

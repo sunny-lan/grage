@@ -1,5 +1,3 @@
-import {SendMessage} from "../src/lib";
-
 enum PinMode {
     INPUT = 0x00,
     INPUT_PULLUP = 0x02,
@@ -67,11 +65,6 @@ window.esp8266 = {
         return {
             command: 'detachInterrupt',
             pin
-        };
-    },
-    digitalRead() {
-        return {
-            command: 'digitalRead',
         };
     },
 };
