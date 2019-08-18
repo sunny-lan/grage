@@ -7,6 +7,9 @@ window.onload = function () {
         return;
     }
 
+    //esp constants
+    const sensorPin = esp8266.Pin.D6, controlPin = esp8266.Pin.D7;
+
     //initialize ui
     const indicator = document.querySelector('#onIndicator');
     const lastUpdate = document.querySelector('#lastUpdate');
@@ -25,8 +28,6 @@ window.onload = function () {
     }, 1000);
 
     grage.onOpen(() => {
-        const sensorPin = esp8266.Pin.D6, controlPin = esp8266.Pin.D7;
-
         toggle.disabled = false;
         grage.connect(id,
             /**
