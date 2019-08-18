@@ -1,0 +1,8 @@
+{
+	"dependencies": {
+		"ws": "^7.1.2"
+	},
+	"devDependencies": {
+		"@types/ws": "^6.0.2"
+	}
+}
