@@ -3,8 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <title>Garage door</title>
+    <script src="/lib/grage.js"></script>
+    <script src="/lib/esp8266.js"></script>
+    <script>
+        window.onload = function () {
+            const id = 'test_device';
+            const sensorPin = esp8266.Pin.D6, controlPin = esp8266.Pin.D5;
+
+            //initialize ui
+            const indicator = document.querySelector('#onIndicator');
+            const lastUpdate = document.querySelector('#lastUpdate');
+            const toggle = document.querySelector('#toggle');
+
+            grage.onOpen(() => {
+                grage.connect(id,
+                    /**
+                     * Runs when a new update is received from the garage door
+                     * @param data
+                     */
+                    function receive(data) {
+                        const sense = data.pinReadings[sensorPin];
+                        if (sense === esp8266.LogicLevel.HIGH) {
+                            indicator.innerText = 'open';
+                            toggle.innerText = 'Close door';
+                        } else {
+                            indicator.innerText = 'closed';
+                            toggle.innerText = 'Open door';
+                        }
+
+                        lastUpdate.innerText = new Date();
+                    },
+                    /**
+                     * Runs when the device initializes
+                     */
+                    function refresh() {
+                        //enable input then read
+                        grage.send(id, esp8266.pinMode(sensorPin, esp8266.PinMode.INPUT_PULLUP));
+                        grage.send(id, esp8266.digitalRead());
+
+                        //enable output, make sure it is off
+                        grage.send(id, esp8266.pinMode(controlPin, esp8266.PinMode.OUTPUT));
+                        grage.send(id, esp8266.digitalWrite(controlPin, esp8266.LogicLevel.LOW));
+                    }
+                )
+            });
+
+            window.handleClick = function () {
+                //send 100ms pulse to garage door switch
+                grage.send(id, esp8266.digitalWrite(controlPin, esp8266.LogicLevel.HIGH));
+                setTimeout(() => {
+                    grage.send(id, esp8266.digitalWrite(controlPin, esp8266.LogicLevel.LOW));
+                }, 100);
+            }
+        };
+
+    </script>
 </head>
 <body>
-hello
+Garage door is
+<div id="onIndicator">no data</div>
+Last update:
+<div id="lastUpdate">n/a</div>
+
+<button id="toggle" onclick="handleClick()">not connected</button>
 </body>
 </html>

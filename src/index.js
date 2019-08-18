@@ -10,5 +10,6 @@ const wsHandler = ws_1.default();
 // @ts-ignore
 app.ws('/ws', wsHandler);
 app.use('/apps', express.static('apps'));
+app.use('/lib', express.static('lib'));
 app.listen(port, () => console.log('listening on ', port));
 //# sourceMappingURL=index.js.map
