@@ -1,4 +1,4 @@
-import '../index';
+//import '../index';
 
 import * as WebSocket from 'ws';
 import {createInterface} from 'readline';
@@ -8,7 +8,7 @@ const rl = createInterface({
     output: process.stdout
 });
 
-const ws = new WebSocket('ws://localhost:1337/ws');
+const ws = new WebSocket('ws://grage.herokuapp.com/ws');
 
 ws.on('message', x => console.log('[recv]', x));
 

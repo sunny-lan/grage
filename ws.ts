@@ -133,14 +133,14 @@ export default function makeWss(options = {
             });
         }
 
-        let messageTimeout: NodeJS.Timeout | undefined;
+        //let messageTimeout: NodeJS.Timeout | undefined;
         me.on('message', function incoming(message) {
             debug(`[client ${clientID}]`, message);
             //disconnect client if they are inactive for a long time
-            if (messageTimeout) {
-                clearInterval(messageTimeout);
-            }
-            messageTimeout = setTimeout(terminate, options.connectionTimeout);
+            // if (messageTimeout) {
+            //     clearInterval(messageTimeout);
+            // }
+            // messageTimeout = setTimeout(terminate, options.connectionTimeout);
 
             try {
                 const m = JSON.parse(message.toString()) as Message;
