@@ -3,12 +3,11 @@ import '../index';
 import * as WebSocket from 'ws';
 import {ConnectMessage, Message, SendMessage} from "../lib";
 
-const ws1 = new WebSocket('ws://127.0.0.1:1337');
-const ws2 = new WebSocket('ws://127.0.0.1:1337');
 
-async function open(ws: WebSocket){
+async function open(addr='ws://127.0.0.1:1337/ws'):Promise<WebSocket>{
+    const ws = new WebSocket(addr);
     return new Promise((resolve) => {
-        ws.once('open', resolve);
+        ws.once('open', ()=>resolve(ws));
     });
 }
 
@@ -34,8 +33,8 @@ async function s<T extends Message>(ws: WebSocket, d: T) {
 }
 
 async function run() {
-    await open(ws1);
-    await open(ws2);
+    const ws1=await open();
+    const ws2=await open();
     console.log('1,2 open');
     await s<ConnectMessage>(ws1, {
         type: 'connect',
