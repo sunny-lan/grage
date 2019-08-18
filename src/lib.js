@@ -1,15 +1,23 @@
-export function isErrorMessage(m) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+function isErrorMessage(m) {
     return m.type === 'error';
 }
-export function isMetadataMessage(m) {
+exports.isErrorMessage = isErrorMessage;
+function isMetadataMessage(m) {
     return m.type === 'metadata';
 }
-export function isConnectMessage(m) {
+exports.isMetadataMessage = isMetadataMessage;
+function isConnectMessage(m) {
     return m.type === 'connect';
 }
-export function isSendMessage(m) {
+exports.isConnectMessage = isConnectMessage;
+function isSendMessage(m) {
     return m.type === 'send';
 }
-export function isReceiveMessage(m) {
+exports.isSendMessage = isSendMessage;
+function isReceiveMessage(m) {
     return m.type === 'receive';
 }
+exports.isReceiveMessage = isReceiveMessage;
+//# sourceMappingURL=lib.js.map

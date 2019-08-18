@@ -1,4 +1,4 @@
-import {ConnectMessage, Message, Ping, ReceiveMessage, RequestPing, SendMessage} from "../src/lib";
+import {ConnectMessage, Message, ReceiveMessage, RequestPing, SendMessage} from "../src/lib";
 
 function isReceiveMessage(m: Message): m is ReceiveMessage {
     return m.type === 'receive';
@@ -81,7 +81,6 @@ window.grage = (function () {
          * @param data the data to save
          */
         saveData(data: any) {
-            const app = grage.getAppID();
             window.localStorage.setItem(grage.getAppID(), JSON.stringify(data));
         },
         /**
