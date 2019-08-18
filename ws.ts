@@ -109,9 +109,9 @@ export default function makeWss(options = {
             //try to tell client what went wrong
             const errMsg: ErrorMessage = {
                 type: "error",
-                error: error.stack,
+                error: (error.stack || 'No stack trace').toString(),
             };
-            me.send(errMsg, (e) => {
+            me.send(JSON.stringify(errMsg), (e) => {
                 if (e) {
                     //this prints if send failed
                     console.error('Error while sending error', e);
@@ -121,7 +121,14 @@ export default function makeWss(options = {
             });
         }
 
+        let messageTimeout: NodeJS.Timeout | undefined;
         me.on('message', function incoming(message) {
+            //disconnect client if they are inactive for a long time
+            if (messageTimeout) {
+                clearInterval(messageTimeout);
+            }
+            messageTimeout = setTimeout(terminate, options.connectionTimeout);
+
             try {
                 const m = JSON.parse(message.toString()) as Message;
 

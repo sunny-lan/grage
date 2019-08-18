@@ -1,11 +1,11 @@
 export interface Message {
-    type: string;
+    type: 'error' | 'metadata' | 'connect' | 'send' | 'receive';
 }
 
 
 export interface ErrorMessage extends Message {
     type: 'error';
-    error?: string;
+    error: string;
 }
 
 export function isErrorMessage(m: Message): m is ErrorMessage {
@@ -15,8 +15,9 @@ export function isErrorMessage(m: Message): m is ErrorMessage {
 export interface MetadataMessage extends Message {
     type: 'metadata';
     connectionTimeout: number;
-    connectedChannels:string[];
-    [key:string]:any;
+    connectedChannels: string[];
+
+    [key: string]: any;
 }
 
 export function isMetadataMessage(m: Message): m is MetadataMessage {
@@ -33,6 +34,7 @@ export function isConnectMessage(m: Message): m is ConnectMessage {
 }
 
 export interface ChannelMessage extends Message {
+    type: 'send' | 'receive';
     id: string;
     data: any;
 }
