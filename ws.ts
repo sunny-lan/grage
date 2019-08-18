@@ -1,6 +1,11 @@
 import * as WebSocket from "ws";
 import {ErrorMessage, isConnectMessage, isSendMessage, Message, MetadataMessage, ReceiveMessage} from "./lib";
 
+function debug(...args:any) {
+    if(process.env.DEBUG==='true')
+        console.log(...args);
+}
+
 export default function makeWss(options = {
     connectionTimeout: 60 * 1000,
     ping: 60 * 1000,
@@ -15,7 +20,12 @@ export default function makeWss(options = {
         return channels[id];
     }
 
+    let currentID=1;
+
     return function handleConnection(me: WebSocket) {
+        const clientID=currentID++;
+        console.log('[client connected]', clientID);
+
         const connectedChannels: string[] = [];
         const timers: { [id: string]: NodeJS.Timeout } = {};
 
@@ -77,6 +87,8 @@ export default function makeWss(options = {
          * and cleans up from all connected channels
          */
         function terminate() {
+            console.log('[client disconnected]', clientID);
+
             //stop sending metadata
             clearInterval(metadataTimer);
 
@@ -104,7 +116,7 @@ export default function makeWss(options = {
                 return;
             }
 
-            console.error('[user ws error]', error);
+            console.error(`[client ${clientID} error]`, error);
 
             //try to tell client what went wrong
             const errMsg: ErrorMessage = {
@@ -123,6 +135,7 @@ export default function makeWss(options = {
 
         let messageTimeout: NodeJS.Timeout | undefined;
         me.on('message', function incoming(message) {
+            debug(`[client ${clientID}]`, message);
             //disconnect client if they are inactive for a long time
             if (messageTimeout) {
                 clearInterval(messageTimeout);

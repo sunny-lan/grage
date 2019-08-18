@@ -2,6 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const WebSocket = require("ws");
 const lib_1 = require("./lib");
+function debug(...args) {
+    if (process.env.DEBUG === 'true')
+        console.log(...args);
+}
 function makeWss(options = {
     connectionTimeout: 60 * 1000,
     ping: 60 * 1000,
@@ -12,7 +16,10 @@ function makeWss(options = {
             channels[id] = [];
         return channels[id];
     }
+    let currentID = 1;
     return function handleConnection(me) {
+        const clientID = currentID++;
+        console.log('[client connected]', clientID);
         const connectedChannels = [];
         const timers = {};
         //regularly send ping with metadata
@@ -62,6 +69,7 @@ function makeWss(options = {
          * and cleans up from all connected channels
          */
         function terminate() {
+            console.log('[client disconnected]', clientID);
             //stop sending metadata
             clearInterval(metadataTimer);
             //disconnect websocket if not already
@@ -84,7 +92,7 @@ function makeWss(options = {
             if (error === undefined) {
                 return;
             }
-            console.error('[user ws error]', error);
+            console.error(`[client ${clientID} error]`, error);
             //try to tell client what went wrong
             const errMsg = {
                 type: "error",
@@ -101,6 +109,7 @@ function makeWss(options = {
         }
         let messageTimeout;
         me.on('message', function incoming(message) {
+            debug(`[client ${clientID}]`, message);
             //disconnect client if they are inactive for a long time
             if (messageTimeout) {
                 clearInterval(messageTimeout);
