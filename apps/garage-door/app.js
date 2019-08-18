@@ -29,36 +29,38 @@ window.onload = function () {
 
     grage.onOpen(() => {
         toggle.disabled = false;
-        grage.connect(id,
-            /**
-             * Runs when a new update is received from the garage door
-             * @param data
-             */
-            function receive(data) {
-                const sense = data.pinReadings[sensorPin];
-                if (sense === esp8266.LogicLevel.HIGH) {
-                    indicator.innerText = 'open';
-                    toggle.innerText = 'Close door';
-                } else {
-                    indicator.innerText = 'closed';
-                    toggle.innerText = 'Open door';
-                }
-
-                lastUpdateTime = new Date();
-            },
-            /**
-             * Runs when the device initializes
-             */
-            function init() {
-                //enable input then read
-                grage.send(id, esp8266.pinMode(sensorPin, esp8266.PinMode.INPUT_PULLUP));
-                grage.send(id, esp8266.attachInterrupt(sensorPin, esp8266.InterruptMode.CHANGE));
-
-                //enable output, make sure it is off
-                grage.send(id, esp8266.pinMode(controlPin, esp8266.PinMode.OUTPUT));
-                grage.send(id, esp8266.digitalWrite(controlPin, esp8266.LogicLevel.LOW));
+        grage.connect(id, function receive(data) {
+            const sense = data.pinReadings[sensorPin];
+            if (sense === esp8266.LogicLevel.HIGH) {
+                indicator.innerText = 'open';
+                toggle.innerText = 'Close door';
+            } else {
+                indicator.innerText = 'closed';
+                toggle.innerText = 'Open door';
             }
-        )
+
+            lastUpdateTime = new Date();
+        });
+
+        //when device becomes alive, run initialization stuff
+        //such as setting up inputs, outputs and interrupts
+        grage.onAlive(id, function alive() {
+            //enable input then read
+            grage.send(id, esp8266.pinMode(sensorPin, esp8266.PinMode.INPUT_PULLUP));
+            grage.send(id, esp8266.attachInterrupt(sensorPin, esp8266.InterruptMode.CHANGE));
+
+            //enable output, make sure it is off
+            grage.send(id, esp8266.pinMode(controlPin, esp8266.PinMode.OUTPUT));
+            grage.send(id, esp8266.digitalWrite(controlPin, esp8266.LogicLevel.LOW));
+        });
+
+        //when device becomes dead, disable ui again
+        grage.onDead(id, function dead() {
+            toggle.disabled = true;
+            toggle.innerText='Not connected';
+
+            indicator.innerText = '';
+        });
     });
 
     toggle.onclick = function handleClick() {

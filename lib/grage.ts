@@ -1,10 +1,43 @@
-import {ConnectMessage, DataMessage, Message, RequestPing} from "../src/lib";
+import {
+    ChannelMessage,
+    ConnectMessage,
+    DataMessage,
+    Message, Ping,
+    RequestPing
+} from "../src/lib";
+
+function isRequestPing(m: Message): m is RequestPing {
+    return m.type === 'rping';
+}
+
+function isPingMessage(m: Message): m is Ping {
+    return m.type === 'ping';
+}
+
+function isChannelMessage(m: Message): m is ChannelMessage {
+    return isDataMessage(m) || isRequestPing(m) || isPingMessage(m);
+}
 
 function isDataMessage(m: Message): m is DataMessage {
     return m.type === 'data';
 }
 
+enum LiveState {
+    ALIVE, DEAD, UNKNOWN
+}
+
+type LiveListener = () => void;
+
 type ChannelListener = (data: any) => void;
+type Channel = {
+    dataListeners: ChannelListener[];
+    dataListenersOnce: ChannelListener[];
+    state: LiveState;
+    prevState: LiveState;
+    aliveListeners: LiveListener[];
+    deadListeners: LiveListener[];
+    currentTimer?: NodeJS.Timeout;//TODO stop using nodejs classes
+};
 
 // @ts-ignore
 window.grage = (function () {
@@ -13,12 +46,8 @@ window.grage = (function () {
     //list of listeners for when the websocket connects
     let openListeners: (() => void)[] | undefined = [];
 
-    //list of listeners to each channel
-    const channelListeners: {
-        [id: string]: ChannelListener[]
-    } = {};
-    const onceListeners: {
-        [id: string]: ChannelListener[]
+    const channels: {
+        [id: string]: Channel;
     } = {};
 
     /**
@@ -27,8 +56,7 @@ window.grage = (function () {
      */
     function wsSend(m: Message) {
         try {
-            if (grage.options.debug)
-                console.log('[Send]', m);
+            debug('[Send]', m);
             ws.send(JSON.stringify(m));
             return false;
         } catch (error) {
@@ -37,12 +65,19 @@ window.grage = (function () {
         }
     }
 
+    function debug(...args: any) {
+        if (grage.options.debug)
+            console.log(...args);
+    }
+
     const grage = {
         options: {
             debug: true,
-            reloadTime: 5 * 1000,//delay before the page reloads upon error
+            reloadTime: 5 * 1000,//prevents page from instantly reloading if error occurs
             refreshTime: 60 * 1000,
+            aliveTimeout: 10 * 1000,
             pingTimeout: 5 * 1000,
+            pingRetry: 30 * 1000,
         },
         /**
          * Registers a listener which is called upon connection to server
@@ -114,13 +149,19 @@ window.grage = (function () {
          * Connects to a channel and listens to any messages on channel
          * @param id the id of the channel
          * @param cb the listener for messages
-         * @param init called when confirmation received that channel is alive
          */
-        connect(id: string, cb: ChannelListener, init?: () => void) {
+        connect(id: string, cb: ChannelListener) {
             //if not connected to channel yet
-            if (!channelListeners.hasOwnProperty(id)) {
+            if (!channels.hasOwnProperty(id)) {
                 //initialize channelListeners
-                channelListeners[id] = [];
+                channels[id] = {
+                    dataListeners: [],
+                    dataListenersOnce: [],
+                    aliveListeners: [],
+                    deadListeners: [],
+                    state: LiveState.UNKNOWN,
+                    prevState: LiveState.UNKNOWN,
+                };
 
                 //send channel connect message
                 const m: ConnectMessage = {
@@ -132,7 +173,7 @@ window.grage = (function () {
 
             //request new data
             grage.requestPing(id);
-            channelListeners[id].push(cb);
+            channels[id].dataListeners.push(cb);
         },
         /**
          * Listens to a single message from a channel
@@ -140,10 +181,7 @@ window.grage = (function () {
          * @param cb the listener
          */
         once(id: string, cb: ChannelListener) {
-            if (!onceListeners.hasOwnProperty(id)) {
-                onceListeners[id] = [];
-            }
-            onceListeners[id].push(cb);
+            channels[id].dataListenersOnce.push(cb);
         },
         /**
          * Sends data to channel
@@ -158,32 +196,129 @@ window.grage = (function () {
                 fromDevice: false,
             };
             if (wsSend(m)) return;
+        },
+
+        onAlive(id: string, cb: LiveListener) {
+            const channel = channels[id];
+            if (channel.state === LiveState.ALIVE) {
+                cb();
+            }
+            channel.aliveListeners.push(cb);
+        },
+
+        onDead(id: string, cb: LiveListener) {
+            const channel = channels[id];
+            if (channel.state === LiveState.DEAD)
+                cb();
+            channel.deadListeners.push(cb);
         }
     };
+
+    /**
+     * Call this when a device is known to be alive
+     * @param id the device which is alive
+     */
+    function assertAlive(id: string) {
+        debug('[Alive]', id);
+        const channel = channels[id];
+
+        //remove any pending timeout
+        clearTimeout(channel.currentTimer);
+
+        //channel just became alive
+        if (channel.prevState !== LiveState.ALIVE) {
+            channel.prevState = LiveState.ALIVE;
+            //protect from stack explosion by running in next tick
+            setTimeout(() => {
+                debug('[Notifying alive]', id);
+                for (const listener of channel.aliveListeners)
+                    listener();
+            });
+        }
+
+        channel.state = LiveState.ALIVE;
+
+        //make sure to periodically check if channel is actually alive
+        channel.currentTimer = setTimeout(function checkAlive() {
+            channel.state = LiveState.UNKNOWN;
+
+            //channel has not said anything for a long time,
+            //send it a ping to see if its still alive
+            pingTest(id);
+        }, grage.options.aliveTimeout);
+    }
+
+    /**
+     * Tests if a device is still alive by pinging it and waiting for response
+     * @param id the device
+     */
+    function pingTest(id: string) {
+        const channel = channels[id];
+
+        debug('Pinging', id, '...');
+        grage.requestPing(id);
+
+        //if device does respond, assertAlive will get called,
+        //canceling the death timer
+        channel.currentTimer = setTimeout(function dead() {
+            //otherwise no response, its dead.
+            assertDead(id);
+        }, grage.options.pingTimeout);
+    }
+
+    /**
+     * Called when it is known a device is dead
+     * @param id the device known to be dead
+     */
+    function assertDead(id: string) {
+        debug('[Dead]', id);
+        const channel = channels[id];
+
+        //remove any pending timeout
+        clearTimeout(channel.currentTimer);
+
+        //channel just became dead
+        if (channel.prevState !== LiveState.DEAD) {
+            channel.prevState = LiveState.DEAD;
+            //protect from stack explosion by running in next tick
+            setTimeout(() => {
+                debug('[Notifying dead]', id);
+                for (const listener of channel.deadListeners)
+                    listener();
+            });
+        }
+
+        channel.state = LiveState.DEAD;
+
+        //try pinging it again later
+        setTimeout(() => pingTest(id), grage.options.pingRetry);
+    }
 
     ws.onmessage = ev => {
         try {
             const m = JSON.parse(ev.data) as Message;
-            if (grage.options.debug)
-                console.log('[recv]', m);
-            if (isDataMessage(m)) {
-                //ignore messages from other browsers
-                if (m.fromDevice) {
-                    if (channelListeners[m.id]) {
-                        //send to every listener in the proper channel
-                        for (const listener of channelListeners[m.id]) {
-                            listener(m.data);
-                        }
+            debug('[recv]', m);
+            //ignore messages from other browsers, ignore non subscribed messages
+            if (isChannelMessage(m) && m.fromDevice && channels.hasOwnProperty(m.id)) {
+                //since this device just sent a message,
+                //it must be alive
+                assertAlive(m.id);
+
+                const channel = channels[m.id];
+
+                if (isDataMessage(m)) {
+                    //send to every listener in the proper channel
+                    for (const listener of channel.dataListeners) {
+                        listener(m.data);
                     }
 
-                    if (onceListeners[m.id]) {
-                        //send to every once listener
-                        for (const listener of onceListeners[m.id]) {
-                            listener(m.data);
-                        }
-                        //then clear list of once listeners
-                        delete onceListeners[m.id];
+                    //send to every once listener
+                    for (const listener of channel.dataListenersOnce) {
+                        listener(m.data);
                     }
+
+                    //then clear list of once listeners
+                    channel.dataListenersOnce = [];
                 }
             } else {
                 console.warn('[Unknown message type]', m);
@@ -193,10 +328,8 @@ window.grage = (function () {
         }
     };
 
-
     ws.onopen = function handleOpen() {
-        if (grage.options.debug)
-            console.log('[Websocket open]');
+        debug('[Websocket open]');
         //call every listener upon connect
         if (openListeners !== undefined)
             for (const handler of openListeners)
