@@ -44,7 +44,7 @@ window.grage = (function () {
     const ws = new WebSocket('ws://grage.herokuapp.com/ws');
 
     //list of listeners for when the websocket connects
-    let openListeners: (() => void)[] | undefined = [];
+    let openListeners: LiveListener[] | undefined = [];
 
     const channels: {
         [id: string]: Channel;
@@ -65,6 +65,10 @@ window.grage = (function () {
         }
     }
 
+    /**
+     * console.logs the parameters if debug mode is on
+     * @param args the parameters to console.log
+     */
     function debug(...args: any) {
         if (grage.options.debug)
             console.log(...args);
@@ -72,18 +76,38 @@ window.grage = (function () {
 
     const grage = {
         options: {
-            debug: true,
-            reloadTime: 5 * 1000,//prevents page from instantly reloading if error occurs
-            refreshTime: 60 * 1000,
+            /**
+             * shows debug messages if set to true
+             */
+            debug: location.hostname === "localhost" || location.hostname === "127.0.0.1",
+
+            /**
+             * how long to wait before reloading the page
+             * this prevents exploding if errors occur at page load time
+             */
+            reloadTime: 5 * 1000,
+
+            /**
+             * how long to wait before actively checking if a device is alive
+             */
             aliveTimeout: 10 * 1000,
+
+            /**
+             * how long to wait for a device to respond to a ping request
+             */
             pingTimeout: 5 * 1000,
+
+            /**
+             * if a device is not responding,
+             * how long to wait before retrying another ping request
+             */
             pingRetry: 30 * 1000,
         },
         /**
          * Registers a listener which is called upon connection to server
          * @param cb the listener
          */
-        onOpen(cb: () => void) {
+        onOpen(cb: LiveListener) {
             if (openListeners === undefined)
                 cb();
             else
@@ -294,9 +318,9 @@ window.grage = (function () {
         setTimeout(() => pingTest(id), grage.options.pingRetry);
     }
 
-    ws.onmessage = ev => {
+    ws.onmessage = evt => {
         try {
-            const m = JSON.parse(ev.data) as Message;
+            const m = JSON.parse(evt.data) as Message;
             debug('[recv]', m);
             //ignore messages from other browsers, ignore non subscribed messages
             if (isChannelMessage(m) && m.fromDevice && channels.hasOwnProperty(m.id)) {

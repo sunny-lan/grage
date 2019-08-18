@@ -14,15 +14,23 @@
 
     <script>
         window.onload = function () {
-            const connectBtn=document.querySelector('#connect');
-            const deviceID=document.querySelector('#deviceID');
-            connectBtn.onclick=function handleConnect() {
-                const id=deviceID.value;
-                if(id.trim().length>0){
-                    const data=grage.getData({});
-                    data.currentID=id;
+            const data = grage.getData({});
+
+            //if there is already a saved ID, use that
+            if (data.currentID) {
+                window.location = 'app.html';
+                return;
+            }
+
+            const connectBtn = document.querySelector('#connect');
+            const deviceID = document.querySelector('#deviceID');
+            connectBtn.onclick = function handleConnect() {
+                const id = deviceID.value;
+                //make sure user given id is not empty
+                if (id.trim().length > 0) {
+                    data.currentID = id;
                     grage.saveData(data);
-                    window.location.href='app.html';
+                    window.location.href = 'app.html';
                 }
             }
         }

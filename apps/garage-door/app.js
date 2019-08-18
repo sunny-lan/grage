@@ -57,7 +57,7 @@ window.onload = function () {
         //when device becomes dead, disable ui again
         grage.onDead(id, function dead() {
             toggle.disabled = true;
-            toggle.innerText='Not connected';
+            toggle.innerText='not connected';
 
             indicator.innerText = '';
         });
