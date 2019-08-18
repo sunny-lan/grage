@@ -12,12 +12,20 @@ function isConnectMessage(m) {
     return m.type === 'connect';
 }
 exports.isConnectMessage = isConnectMessage;
-function isSendMessage(m) {
-    return m.type === 'send';
+function isChannelMessage(m) {
+    return isDataMessage(m) || isRequestPing(m) || isPingMessage(m);
 }
-exports.isSendMessage = isSendMessage;
-function isReceiveMessage(m) {
-    return m.type === 'receive';
+exports.isChannelMessage = isChannelMessage;
+function isDataMessage(m) {
+    return m.type === 'data';
 }
-exports.isReceiveMessage = isReceiveMessage;
+exports.isDataMessage = isDataMessage;
+function isRequestPing(m) {
+    return m.type === 'rping';
+}
+exports.isRequestPing = isRequestPing;
+function isPingMessage(m) {
+    return m.type === 'ping';
+}
+exports.isPingMessage = isPingMessage;
 //# sourceMappingURL=lib.js.map

@@ -118,18 +118,12 @@ function makeWss(options = {
             // messageTimeout = setTimeout(terminate, options.connectionTimeout);
             try {
                 const m = JSON.parse(message.toString());
-                if (lib_1.isSendMessage(m)) {
-                    const recvMessage = {
-                        type: "receive",
-                        data: m.data,
-                        id: m.id,
-                        fromDevice: m.fromDevice,
-                    };
+                if (lib_1.isChannelMessage(m)) {
                     //send to every client in certain channel
                     for (const client of getClients(m.id)) {
                         //skip me (person who sent message)
                         if (client !== me)
-                            client.send(JSON.stringify(recvMessage), handleError);
+                            client.send(JSON.stringify(m), handleError);
                     }
                 }
                 else if (lib_1.isConnectMessage(m)) {

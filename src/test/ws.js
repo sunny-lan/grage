@@ -43,7 +43,7 @@ async function run() {
     await wait(1000);
     console.log('connected to hello');
     await s(ws1, {
-        type: 'send',
+        type: 'data',
         id: 'hello',
         data: 'lol',
         fromDevice: false,

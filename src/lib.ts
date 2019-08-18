@@ -1,5 +1,5 @@
 export interface Message {
-    type: 'error' | 'metadata' | 'connect' | 'send' | 'receive' | 'rping' | 'ping';
+    type: 'error' | 'metadata' | 'connect' | 'data' | 'receive' | 'rping' | 'ping';
 }
 
 
@@ -34,35 +34,38 @@ export function isConnectMessage(m: Message): m is ConnectMessage {
 }
 
 export interface ChannelMessage extends Message {
-    type: 'send' | 'receive' | 'rping';
+    type: 'data' | 'rping' | 'ping';
     id: string;
+    fromDevice: boolean;
+}
+
+export function isChannelMessage(m: Message): m is ChannelMessage {
+    return isDataMessage(m) || isRequestPing(m) || isPingMessage(m);
+}
+
+export interface DataMessage extends ChannelMessage {
+    type: 'data';
     data: any;
-    fromDevice:boolean;
 }
 
-export interface SendMessage extends ChannelMessage {
-    type: 'send';
+export function isDataMessage(m: Message): m is DataMessage {
+    return m.type === 'data';
 }
 
-export function isSendMessage(m: Message): m is SendMessage {
-    return m.type === 'send';
+export interface RequestPing extends ChannelMessage {
+    type: 'rping',
+    fromDevice: false,
 }
 
-export interface ReceiveMessage extends ChannelMessage {
-    type: 'receive';
+export interface Ping extends ChannelMessage {
+    type: 'ping',
+    fromDevice: true,
 }
 
-export function isReceiveMessage(m: Message): m is ReceiveMessage {
-    return m.type === 'receive';
+export function isRequestPing(m: Message): m is RequestPing {
+    return m.type === 'rping';
 }
 
-export interface RequestPing extends ChannelMessage{
-    type:'rping',
-    data:undefined,
-    fromDevice:false,
-}
-
-export interface Ping extends Message{
-    type:'ping',
-    fromDevice:true,
+export function isPingMessage(m: Message): m is Ping {
+    return m.type === 'ping';
 }

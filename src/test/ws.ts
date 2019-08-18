@@ -1,7 +1,7 @@
 import '..';
 
 import * as WebSocket from 'ws';
-import {ConnectMessage, Message, SendMessage} from "../lib";
+import {ConnectMessage, DataMessage, Message} from "../lib";
 
 
 async function open(addr='ws://127.0.0.1:1337/ws'):Promise<WebSocket>{
@@ -46,8 +46,8 @@ async function run() {
     });
     await wait(1000);
     console.log('connected to hello');
-    await s<SendMessage>(ws1, {
-        type: 'send',
+    await s<DataMessage>(ws1, {
+        type: 'data',
         id: 'hello',
         data: 'lol',
         fromDevice:false,

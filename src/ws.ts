@@ -1,5 +1,11 @@
 import * as WebSocket from "ws";
-import {ErrorMessage, isConnectMessage, isSendMessage, Message, MetadataMessage, ReceiveMessage} from "./lib";
+import {
+    ErrorMessage, isChannelMessage,
+    isConnectMessage,
+    isPingMessage, isRequestPing,
+    Message,
+    MetadataMessage,
+} from "./lib";
 
 function debug(...args: any) {
     if (process.env.DEBUG === 'true')
@@ -145,22 +151,16 @@ export default function makeWss(options = {
             try {
                 const m = JSON.parse(message.toString()) as Message;
 
-                if (isSendMessage(m)) {
-                    const recvMessage: ReceiveMessage = {
-                        type: "receive",
-                        data: m.data,
-                        id: m.id,
-                        fromDevice: m.fromDevice,
-                    };
+                if (isChannelMessage(m)) {
                     //send to every client in certain channel
                     for (const client of getClients(m.id)) {
                         //skip me (person who sent message)
                         if (client !== me)
-                            client.send(JSON.stringify(recvMessage), handleError);
+                            client.send(JSON.stringify(m), handleError);
                     }
                 } else if (isConnectMessage(m)) {
                     connect(m.id);
-                } else {
+                }else {
                     handleError(new Error(`Invalid message type: ${m.type}`));
                 }
             } catch (error) {

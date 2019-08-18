@@ -1,7 +1,7 @@
-import {ConnectMessage, Message, ReceiveMessage, RequestPing, SendMessage} from "../src/lib";
+import {ConnectMessage, DataMessage, Message, RequestPing} from "../src/lib";
 
-function isReceiveMessage(m: Message): m is ReceiveMessage {
-    return m.type === 'receive';
+function isDataMessage(m: Message): m is DataMessage {
+    return m.type === 'data';
 }
 
 type ChannelListener = (data: any) => void;
@@ -32,14 +32,14 @@ window.grage = (function () {
             ws.send(JSON.stringify(m));
             return false;
         } catch (error) {
-             handleError(error);
-             return error;
+            handleError(error);
+            return error;
         }
     }
 
     const grage = {
         options: {
-            debug: false,
+            debug: true,
             reloadTime: 5 * 1000,//delay before the page reloads upon error
             refreshTime: 60 * 1000,
             pingTimeout: 5 * 1000,
@@ -106,10 +106,9 @@ window.grage = (function () {
             const m: RequestPing = {
                 type: "rping",
                 id,
-                data: undefined,
-                fromDevice:false
+                fromDevice: false
             };
-            if(wsSend(m))return;
+            if (wsSend(m)) return;
         },
         /**
          * Connects to a channel and listens to any messages on channel
@@ -128,9 +127,11 @@ window.grage = (function () {
                     type: "connect",
                     id,
                 };
-                if(wsSend(m))return;
+                if (wsSend(m)) return;
             }
 
+            //request new data
+            grage.requestPing(id);
             channelListeners[id].push(cb);
         },
         /**
@@ -150,13 +151,13 @@ window.grage = (function () {
          * @param data the data to send
          */
         send(id: string, data: any) {
-            const m: SendMessage = {
-                type: "send",
+            const m: DataMessage = {
+                type: "data",
                 data,
                 id,
-                fromDevice:false,
+                fromDevice: false,
             };
-            if(wsSend(m))return;
+            if (wsSend(m)) return;
         }
     };
 
@@ -165,19 +166,24 @@ window.grage = (function () {
             const m = JSON.parse(ev.data) as Message;
             if (grage.options.debug)
                 console.log('[recv]', m);
-            if (isReceiveMessage(m)) {
+            if (isDataMessage(m)) {
                 //ignore messages from other browsers
-                if(m.fromDevice) {
-                    //send to every listener in the proper channel
-                    for (const listener of channelListeners[m.id]) {
-                        listener(m.data);
+                if (m.fromDevice) {
+                    if (channelListeners[m.id]) {
+                        //send to every listener in the proper channel
+                        for (const listener of channelListeners[m.id]) {
+                            listener(m.data);
+                        }
                     }
-                    //send to every once listener
-                    for (const listener of onceListeners[m.id]) {
-                        listener(m.data);
+
+                    if (onceListeners[m.id]) {
+                        //send to every once listener
+                        for (const listener of onceListeners[m.id]) {
+                            listener(m.data);
+                        }
+                        //then clear list of once listeners
+                        delete onceListeners[m.id];
                     }
-                    //then clear list of once listeners
-                    delete onceListeners[m.id];
                 }
             } else {
                 console.warn('[Unknown message type]', m);
@@ -204,8 +210,8 @@ window.grage = (function () {
         if (!grage.options.debug)
             grage.terminate();
         else {
-            debugger;
             console.log('[Debug mode] frozen');
+            debugger;
         }
     }
 
