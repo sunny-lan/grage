@@ -15,20 +15,20 @@ library is included to make this easier.
 
 ## Running the server
 
-Note: There is an existing server at [grage.herokuapp.com]
+Note: There is an existing server at [grage.herokuapp.com](grage.herokuapp.com]
 
-###Step 1
+### Step 1
 
 Clone the repo.
 
-###Step 2
+### Step 2
 
-#####Running locally
+##### Running locally
 
 `cd` into to the repo, and run `node src/index.js`.
 Node v10 or higher is recommended.
 
-#####Heroku
+##### Heroku
 
 The app is also prepared to run Heroku.
 There are no addons required, just create the app and push.
@@ -72,7 +72,7 @@ The actual message format is JSON.
 
 These are the message formats which a client is allowed to send to server:
 
-####Send data
+#### Send data
 ```json
 {
   "type": "data",
@@ -85,7 +85,7 @@ This causes the server to broadcast whatever data is included in `data` to the c
 The `fromDevice` field must `true` if the message is sent from a device, and `false` if
 sent from a browser.
 
-####Connect to channel
+#### Connect to channel
 ```json
 {
   "type": "connect",
