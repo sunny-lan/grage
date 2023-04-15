@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.isPingMessage = exports.isRequestPing = exports.isDataMessage = exports.isChannelMessage = exports.isConnectMessage = exports.isMetadataMessage = exports.isErrorMessage = void 0;
 function isErrorMessage(m) {
     return m.type === 'error';
 }
@@ -28,4 +29,3 @@ function isPingMessage(m) {
     return m.type === 'ping';
 }
 exports.isPingMessage = isPingMessage;
-//# sourceMappingURL=lib.js.map

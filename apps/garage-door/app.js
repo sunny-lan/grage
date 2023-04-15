@@ -1,4 +1,5 @@
 window.onload = function () {
+    const grage = window.makeGrage();
     const data = grage.getData({});
     const id = data.currentID;
     //if no device selected, return to index
