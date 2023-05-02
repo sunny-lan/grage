@@ -1,0 +1,6 @@
+[submodule "apps/grage-door"]
+    path = apps/grage-door
+    url = https://github.com/sunny-lan/grage-door
+[submodule "grage-lib"]
+    path = grage-lib
+    url = https://github.com/sunny-lan/grage-lib
