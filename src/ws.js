@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const WebSocket = require("ws");
-const lib_1 = require("./lib");
+const lib_1 = require("grage-lib/lib");
 function debug(...args) {
     if (process.env.DEBUG === 'true')
         console.log(...args);

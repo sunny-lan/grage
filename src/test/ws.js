@@ -24,7 +24,7 @@ async function s(ws, d) {
             if (e)
                 reject(e);
             else
-                resolve();
+                resolve(null);
         });
     });
 }

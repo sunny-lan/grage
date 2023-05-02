@@ -2,6 +2,7 @@
 	"dependencies": {
 		"express": "^4.17.1",
 		"express-ws": "^4.0.0",
+		"grage-lib": "^1.0.3",
 		"ws": "^7.1.2"
 	},
 	"devDependencies": {

@@ -4,13 +4,9 @@
     "target": "es2017",
     "sourceMap": true,
     "inlineSources": true,
-    "lib": [ "dom","es2017"],
+    "lib": [ "es2017"],
     "moduleResolution": "node",
     "noImplicitAny": true,
     "strictNullChecks": true
-  },
-  "exclude": [
-    "../node_modules",
-    "../lib/**"
-  ]
+  }
 }

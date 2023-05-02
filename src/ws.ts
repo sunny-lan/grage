@@ -5,7 +5,7 @@ import {
     isPingMessage, isRequestPing,
     Message,
     MetadataMessage,
-} from "./lib";
+} from "grage-lib/lib";
 
 function debug(...args: any) {
     if (process.env.DEBUG === 'true')

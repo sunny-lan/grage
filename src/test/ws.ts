@@ -1,7 +1,7 @@
 import '..';
 
 import * as WebSocket from 'ws';
-import {ConnectMessage, DataMessage, Message} from "../lib";
+import {ConnectMessage, DataMessage, Message} from "grage-lib/lib";
 
 
 async function open(addr='ws://127.0.0.1:1337/ws'):Promise<WebSocket>{
@@ -27,7 +27,7 @@ async function s<T extends Message>(ws: WebSocket, d: T) {
     return new Promise((resolve, reject) => {
         ws.send(JSON.stringify(d), (e) => {
             if (e) reject(e);
-            else resolve();
+            else resolve(null);
         });
     });
 }
